@@ -17,39 +17,39 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long user_id;
+    private Long userId;
 
     @Column(nullable = false, unique = true, length = 50)
-    private String user_name;
+    private String userName;
 
     @Column(nullable = false, length = 255)
-    private String password_hash;
+    private String passwordHash;
 
     @Column(nullable = false, length = 100)
-    private String full_name;
+    private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
 
     @Column(nullable = false)
-    private boolean is_active = true;
+    private boolean isActive;
 
     @Column(nullable = false, updatable = false)
-    private Instant created_at;
+    private Instant createdAt;
 
     @Column(nullable = false)
-    private Instant updated_at;
+    private Instant updatedAt;
 
     @PrePersist
-    protected void on_create() {
+    protected void onCreate() {
         Instant now = Instant.now();
-        this.created_at = now;
-        this.updated_at = now;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
-    protected void on_update() {
-        this.updated_at = Instant.now();
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
     }
 }

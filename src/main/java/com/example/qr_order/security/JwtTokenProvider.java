@@ -18,36 +18,36 @@ import java.util.function.Function;
 @Component
 public class JwtTokenProvider {
 
-    private final Key signing_key;
-    private final long jwt_expiration;
+    private final Key signingKey;
+    private final long jwtExpiration;
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String jwtSecretBase64,
-            @Value("${app.jwt.expiration}") long jwt_expiration
+            @Value("${app.jwt.expiration}") long jwtExpiration
     ) {
         // app.jwt.secret phải là BASE64 hợp lệ
-        this.signing_key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecretBase64));
-        this.jwt_expiration = jwt_expiration; // tính theo milliseconds
+        this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecretBase64));
+        this.jwtExpiration = jwtExpiration; // tính theo milliseconds
     }
 
-    public String generate_token(UserDetails user_details){
+    public String generateToken(UserDetails userDetails){
 
-        String user_name = user_details.getUsername();
-        List<String> roles = user_details.getAuthorities()
+        String userName = userDetails.getUsername();
+        List<String> roles = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         Date now = new Date();
-        Date expiry_date = new Date(now.getTime() + jwt_expiration);
+        Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
-        Claims claims = Jwts.claims().setSubject(user_name);
+        Claims claims = Jwts.claims().setSubject(userName);
         claims.put("roles", roles);
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
-                .setExpiration(expiry_date)
-                .signWith(signing_key, SignatureAlgorithm.HS512)
+                .setExpiration(expiryDate)
+                .signWith(signingKey, SignatureAlgorithm.HS512)
                 .compact();
     }
 
@@ -66,7 +66,7 @@ public class JwtTokenProvider {
 
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(signing_key)
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

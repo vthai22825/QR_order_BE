@@ -22,14 +22,14 @@ public class BlackListToken {
     private String token;
 
     @Column(nullable = false)
-    private LocalDateTime expires_at;
+    private LocalDateTime expiresAt;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 
     @PrePersist
-    void on_create(){
-        created_at = LocalDateTime.now();
+    void onCreate(){
+        createdAt = LocalDateTime.now();
     }
 
 }

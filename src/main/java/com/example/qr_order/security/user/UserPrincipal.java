@@ -12,14 +12,14 @@ import java.util.List;
 @AllArgsConstructor
 public class UserPrincipal implements UserDetails {
 
-    private final Long user_id;
-    private final String user_name;
-    private final String password_hash;
+    private final Long userId;
+    private final String userName;
+    private final String passwordHash;
     private final String role;
-    private final boolean is_active;
+    private final boolean isActive;
 
     public Long getId() {
-        return user_id;
+        return userId;
     }
 
     public String getRole() {
@@ -28,18 +28,17 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Spring Security convention: ROLE_*
         return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     @Override
     public String getPassword() {
-        return password_hash;
+        return passwordHash;
     }
 
     @Override
     public String getUsername() {
-        return user_name;
+        return userName;
     }
 
     @Override
@@ -59,6 +58,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return is_active;
+        return isActive;
     }
 }

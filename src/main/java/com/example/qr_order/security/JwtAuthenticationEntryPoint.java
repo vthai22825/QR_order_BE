@@ -14,14 +14,14 @@ import java.io.IOException;
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest http_servlet_request,
-                         HttpServletResponse http_servlet_response,
-                         AuthenticationException authentication_exception)
+    public void commence(HttpServletRequest httpServletRequest,
+                         HttpServletResponse httpServletResponse,
+                         AuthenticationException authenticationException)
         throws IOException, ServletException{
-        http_servlet_response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        http_servlet_response.setContentType("application/json");
-        http_servlet_response.setCharacterEncoding("UTF-8");
-        http_servlet_response.getWriter().write("{\"message\":\"Unauthorized\"}");
+        httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        httpServletResponse.setContentType("application/json");
+        httpServletResponse.setCharacterEncoding("UTF-8");
+        httpServletResponse.getWriter().write("{\"message\":\"Unauthorized\"}");
     }
 
 }

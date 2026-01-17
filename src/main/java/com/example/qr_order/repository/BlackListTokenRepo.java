@@ -15,6 +15,6 @@ public interface BlackListTokenRepo extends JpaRepository<BlackListToken, String
 
     @Query("""
     delete from BlackListToken  b
-    where b.expires_at < :time """)
+    where b.expiresAt < :time """)
     long deleteByExpiresAtBefore(java.time.LocalDateTime time);
 }

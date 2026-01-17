@@ -13,13 +13,13 @@ import java.util.Optional;
 public interface UserRepo extends JpaRepository<User, Long> {
     @Query("""
     select u from User u 
-    where u.user_name = :user_name
+    where u.userName = :userName
     """)
-    Optional<User> findByUserName(String user_name);
+    Optional<User> findByUserName(String userName);
 
     @Query("""
     select case when count(u) > 0 then true else false end
-    from User u where u.user_name = :user_name
+    from User u where u.userName = :userName
     """)
-    boolean existsByUserName(@Param("user_name") String user_name);
+    boolean existsByUserName(@Param("userName") String userName);
 }

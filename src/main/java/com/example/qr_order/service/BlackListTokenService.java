@@ -14,13 +14,13 @@ public class BlackListTokenService {
 
     private final BlackListTokenRepo black_list_token_repo;
 
-    public void black_list(String token, LocalDateTime expires_at){
+    public void blackList(String token, LocalDateTime expires_at){
         if (!black_list_token_repo.existsByToken(token)){
             black_list_token_repo.save(new BlackListToken(token, expires_at, null));
         }
     }
 
-    public boolean is_black_list(String token){
+    public boolean isBlackList(String token){
         return black_list_token_repo.existsByToken(token);
     }
 
