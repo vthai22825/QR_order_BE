@@ -5,24 +5,25 @@ import com.example.qr_order.enums.Role;
 import com.example.qr_order.repository.UserRepo;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DataInitializer implements CommandLineRunner {
     private final UserRepo userRepo;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepo userRepo,
-                           PasswordEncoder passwordEncoder){
+            PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public void run(String... args){
+    public void run(String... args) {
         seedUserIfNotExists("owner", "Admin", Role.OWNER, "Admin@123");
         seedUserIfNotExists("cashier", "Cashier", Role.CASHIER, "Cashier@123");
         seedUserIfNotExists("server", "Server", Role.SERVER, "Server@123");
     }
-
 
     private void seedUserIfNotExists(String userName, String fullName, Role role, String rawPassword) {
         boolean userExists = userRepo.existsByUserName(userName);
@@ -38,6 +39,5 @@ public class DataInitializer implements CommandLineRunner {
 
         userRepo.save(user);
     }
-
 
 }

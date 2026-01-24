@@ -11,7 +11,7 @@ import com.example.qr_order.security.JwtTokenProvider;
 import java.util.regex.Pattern;
 
 import com.example.qr_order.security.user.CustomUserDetails;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,7 +37,7 @@ public class AuthService {
 
     // Phần Đăng ký
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public MessageResponse register(RegisterRequest registerRequest) {
 
         if (registerRequest == null) {
@@ -53,7 +53,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "registerRequest is required");
         }
         if (userRepo.existsByUserName(userName)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "registerRequest already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
         if (password == null || !Pattern.matches(PASSWORD_PATTERN, password)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

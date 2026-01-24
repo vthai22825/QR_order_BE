@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 public interface BlackListTokenRepo extends JpaRepository<BlackListToken, String> {
 
     @Query("""
-    select  case when count(b) > 0 then true else false end
+    select case when count(b) > 0 then true else false end
     from BlackListToken  b where b.token = :token""")
     boolean existsByToken(String token);
 

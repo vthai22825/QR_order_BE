@@ -8,7 +8,7 @@ import java.time.Instant;
 
 
 @Entity
-@Table(name = "User")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
