@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.data.domain.Page;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+
 @RestController
 @RequestMapping("/api/food")
 @RequiredArgsConstructor
@@ -21,17 +24,21 @@ public class FoodController {
     private final FoodService foodService;
 
     // Create - Add new food
-    @PostMapping("/add")
-    public ResponseEntity<Food> createFood(@Valid @RequestBody FoodRequest request) {
-        Food savedFood = foodService.createFood(request);
+    @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Food> createFood(
+            @ModelAttribute @Valid FoodRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+        Food savedFood = foodService.createFood(request, imageFile);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedFood);
     }
 
     // Update - Update food
-    @PutMapping("/update/{id}")
-    public ResponseEntity<FoodDetailResponse> updateFood(@Valid @PathVariable("id") Long foodId,
-            @RequestBody FoodRequest request) {
-        FoodDetailResponse updatedFood = foodService.updateFood(foodId, request);
+    @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FoodDetailResponse> updateFood(
+            @PathVariable("id") Long foodId,
+            @ModelAttribute @Valid FoodRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
+        FoodDetailResponse updatedFood = foodService.updateFood(foodId, request, imageFile);
         return ResponseEntity.ok(updatedFood);
     }
 
