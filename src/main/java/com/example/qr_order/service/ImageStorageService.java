@@ -11,7 +11,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
