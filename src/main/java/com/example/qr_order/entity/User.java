@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.time.Instant;
 
-
 @Entity
 @Table(name = "users")
 @Getter
@@ -40,6 +39,9 @@ public class User {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Column(nullable = false)
+    private boolean isFirstLogin = true;
 
     @PrePersist
     protected void onCreate() {

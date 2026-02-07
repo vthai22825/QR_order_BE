@@ -8,7 +8,6 @@ import lombok.Setter;
 @Setter
 public class CreateEmployeeRequest {
     private String userName;
-    private String password;
     private String fullName;
     private Role role;
 }

@@ -8,6 +8,7 @@ import com.example.qr_order.entity.User;
 import com.example.qr_order.enums.Role;
 import com.example.qr_order.repository.UserRepo;
 import com.example.qr_order.security.JwtTokenProvider;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import com.example.qr_order.security.user.CustomUserDetails;
@@ -38,7 +39,6 @@ public class AuthService {
     // Phần tạo tài khoản cho nhân viên
 
     @Transactional(rollbackFor = Exception.class)
-
     public MessageResponse createEmployee(com.example.qr_order.dtos.CreateEmployeeRequest request) {
 
         if (request == null) {
@@ -46,7 +46,8 @@ public class AuthService {
         }
 
         String userName = request.getUserName();
-        String password = request.getPassword();
+        // Default password
+        String password = "VibeFoodie@123";
         String fullName = request.getFullName();
         Role role = request.getRole();
 
@@ -55,10 +56,6 @@ public class AuthService {
         }
         if (userRepo.existsByUserName(userName)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
-        }
-        if (password == null || !Pattern.matches(PASSWORD_PATTERN, password)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Password must have at least 8 characters, 1 Upper, 1 Lower and 1 special character ");
         }
 
         if (fullName == null || fullName.isBlank()) {
@@ -75,14 +72,25 @@ public class AuthService {
         newUser.setPasswordHash(passwordEncoder.encode(password));
         newUser.setFullName(fullName);
         newUser.setActive(true); // Active immediately
+        newUser.setFirstLogin(true); // Must change password
         newUser.setRole(role);
 
         userRepo.save(newUser);
 
-        return new MessageResponse("Employee account created successfully.");
+        return new MessageResponse("Employee account created successfully. Default password is: VibeFoodie@123");
     }
 
-    
+    public List<com.example.qr_order.dtos.response.EmployeeResponse> getAllEmployees() {
+        List<User> employees = userRepo.findByRoleNotOrderByCreatedAtDesc(Role.OWNER);
+        return employees.stream()
+                .map(user -> new com.example.qr_order.dtos.response.EmployeeResponse(
+                        user.getFullName(),
+                        user.getUserName(),
+                        user.getRole(),
+                        user.getPasswordHash()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // Phần đăng nhập
     public AuthResponse login(LoginRequest loginRequest) {
 
@@ -99,11 +107,20 @@ public class AuthService {
 
             String accessToken = jwtTokenProvider.generateToken(userDetails);
 
+            User user = userRepo.findById(userDetails.getId()).orElseThrow();
+
+            // Owner is never considered first login (or handled separately)
+            boolean isFirstLogin = user.isFirstLogin();
+            if (userDetails.getRole() == Role.OWNER) {
+                isFirstLogin = false;
+            }
+
             return new AuthResponse(
                     userDetails.getId(),
                     userDetails.getUsername(),
                     userDetails.getRole(),
-                    accessToken);
+                    accessToken,
+                    isFirstLogin);
 
         } catch (DisabledException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is disabled. Please contact support.");
@@ -114,6 +131,46 @@ public class AuthService {
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed: " + e.getMessage());
         }
+    }
+
+    public MessageResponse changePassword(Long userId, com.example.qr_order.dtos.ChangePasswordRequest request) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Old password is incorrect");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirm password does not match");
+        }
+
+        if (!Pattern.matches(PASSWORD_PATTERN, request.getNewPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Password must have at least 8 characters, 1 Upper, 1 Lower and 1 special character ");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setFirstLogin(false);
+        userRepo.save(user);
+
+        return new MessageResponse("Password changed successfully.");
+    }
+
+    public MessageResponse resetPassword(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Prevent resetting Owner password via this method
+        if (user.getRole() == Role.OWNER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot reset Owner password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode("VibeFoodie@123"));
+        user.setFirstLogin(true);
+        userRepo.save(user);
+
+        return new MessageResponse("Password reset to default: VibeFoodie@123");
     }
 
 }

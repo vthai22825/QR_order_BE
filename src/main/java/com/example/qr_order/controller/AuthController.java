@@ -26,4 +26,17 @@ public class AuthController {
         return ResponseEntity.ok(authResponse);
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<com.example.qr_order.dtos.response.MessageResponse> changePassword(
+            @Valid @RequestBody com.example.qr_order.dtos.ChangePasswordRequest request) {
+
+        // Get current user ID from SecurityContext
+        com.example.qr_order.security.user.CustomUserDetails userDetails = (com.example.qr_order.security.user.CustomUserDetails) org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+
+        com.example.qr_order.dtos.response.MessageResponse response = authService.changePassword(userDetails.getId(),
+                request);
+        return ResponseEntity.ok(response);
+    }
+
 }
