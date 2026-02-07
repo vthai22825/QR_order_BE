@@ -1,7 +1,7 @@
 package com.example.qr_order.service;
 
 import com.example.qr_order.dtos.LoginRequest;
-import com.example.qr_order.dtos.RegisterRequest;
+
 import com.example.qr_order.dtos.response.AuthResponse;
 import com.example.qr_order.dtos.response.MessageResponse;
 import com.example.qr_order.entity.User;
@@ -35,22 +35,23 @@ public class AuthService {
 
     private static final String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
 
-    // Phần Đăng ký
+    // Phần tạo tài khoản cho nhân viên
 
     @Transactional(rollbackFor = Exception.class)
-    public MessageResponse register(RegisterRequest registerRequest) {
 
-        if (registerRequest == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Register request cannot be null");
+    public MessageResponse createEmployee(com.example.qr_order.dtos.CreateEmployeeRequest request) {
+
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
         }
 
-        String userName = registerRequest.getUserName();
-        String password = registerRequest.getPassword();
-        String confirmPassword = registerRequest.getConfirmPassword();
-        String fullName = registerRequest.getFullName();
+        String userName = request.getUserName();
+        String password = request.getPassword();
+        String fullName = request.getFullName();
+        Role role = request.getRole();
 
         if (userName == null || userName.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "registerRequest is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
         }
         if (userRepo.existsByUserName(userName)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
@@ -60,12 +61,12 @@ public class AuthService {
                     "Password must have at least 8 characters, 1 Upper, 1 Lower and 1 special character ");
         }
 
-        if (!password.equals(confirmPassword)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirm password does not match");
-        }
-
         if (fullName == null || fullName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Full name is required");
+        }
+
+        if (role == null || role == Role.OWNER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role for employee");
         }
 
         User newUser = new User();
@@ -73,14 +74,15 @@ public class AuthService {
         newUser.setUserName(userName);
         newUser.setPasswordHash(passwordEncoder.encode(password));
         newUser.setFullName(fullName);
-        newUser.setActive(false);
-        newUser.setRole(Role.SERVER);
+        newUser.setActive(true); // Active immediately
+        newUser.setRole(role);
 
         userRepo.save(newUser);
 
-        return new MessageResponse("Registration successful. Please wait for the Owner to approve your account.");
+        return new MessageResponse("Employee account created successfully.");
     }
 
+    
     // Phần đăng nhập
     public AuthResponse login(LoginRequest loginRequest) {
 

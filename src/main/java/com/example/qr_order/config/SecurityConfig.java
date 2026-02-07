@@ -1,6 +1,5 @@
 package com.example.qr_order.config;
 
-
 import com.example.qr_order.security.JwtAuthenticationEntryPoint;
 import com.example.qr_order.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,71 +26,69 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-   private final JwtAuthenticationFilter jwtAuthenticationFilter;
-   private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-   public SecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-                         JwtAuthenticationFilter jwtAuthenticationFilter){
-       this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-       this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-   }
+    public SecurityConfig(JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+    }
 
-   @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
-       httpSecurity
-               .cors(Customizer.withDefaults())
-               .csrf(csrf -> csrf.disable())
-               .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-               .formLogin(form -> form.disable())
-               .httpBasic(basic -> basic.disable())
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .cors(Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
 
-               .exceptionHandling(ex -> ex
-                       .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                       .accessDeniedHandler((request, response, accessDeniedException) -> {
-                           response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                           response.setContentType("application/json");
-                           response.setCharacterEncoding("UTF-8");
-                           response.getWriter().write("{\"message\":\"Forbidden\"}");
-                       })
-               )
-               .authorizeHttpRequests(auth -> auth
-                       .requestMatchers("/api/auth/**").permitAll()
-                       .requestMatchers("/api/public/**").permitAll()
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"message\":\"Forbidden\"}");
+                        }))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
 
-                       .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                       .requestMatchers("/api/admin/**").hasRole("OWNER")
-                       .requestMatchers("/api/cashier/**").hasAnyRole("OWNER","CASHIER")
-                       .requestMatchers("/api/server/**").hasAnyRole("OWNER","CASHIER","SERVER")
+                        .requestMatchers("/api/admin/**").hasRole("OWNER")
+                        .requestMatchers("/api/cashier/**").hasAnyRole("OWNER", "CASHIER")
+                        .requestMatchers("/api/server/**").hasAnyRole("OWNER", "CASHIER", "SERVER")
 
-                       .anyRequest().authenticated()
-               )
-               .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-       return httpSecurity.build();
-   }
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return httpSecurity.build();
+    }
 
-   @Bean
-    public PasswordEncoder passwordEncoder(){
-       return new BCryptPasswordEncoder();
-   }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-   @Bean
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-       throws Exception{
-       return authenticationConfiguration.getAuthenticationManager();
-   }
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
 
-   @Bean
-    public CorsConfigurationSource corsConfigurationSource(){
-       CorsConfiguration corsConfig = new CorsConfiguration();
-       corsConfig.setAllowedOrigins(List.of("http://localhost:4200"));
-       corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-       corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-       corsConfig.setAllowCredentials(true);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(List.of("http://localhost:4200"));
+        corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        corsConfig.setAllowCredentials(true);
 
-       UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-       source.registerCorsConfiguration("/**", corsConfig);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
 
-       return source;
-   }
+        return source;
+    }
 }

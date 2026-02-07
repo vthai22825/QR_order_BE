@@ -23,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
         seedUserIfNotExists("owner", "Admin", Role.OWNER, "Admin@123");
         seedUserIfNotExists("cashier", "Cashier", Role.CASHIER, "Cashier@123");
         seedUserIfNotExists("server", "Server", Role.SERVER, "Server@123");
+        seedUserIfNotExists("chef", "Chef", Role.CHEF, "Chef@123");
     }
 
     private void seedUserIfNotExists(String userName, String fullName, Role role, String rawPassword) {
