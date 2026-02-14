@@ -24,6 +24,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import com.example.qr_order.dtos.CreateEmployeeRequest;
+import com.example.qr_order.dtos.response.EmployeeResponse;
+import com.example.qr_order.dtos.ChangePasswordRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +42,7 @@ public class AuthService {
     // Phần tạo tài khoản cho nhân viên
 
     @Transactional(rollbackFor = Exception.class)
-    public MessageResponse createEmployee(com.example.qr_order.dtos.CreateEmployeeRequest request) {
+    public MessageResponse createEmployee(CreateEmployeeRequest request) {
 
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
@@ -80,15 +83,15 @@ public class AuthService {
         return new MessageResponse("Employee account created successfully. Default password is: VibeFoodie@123");
     }
 
-    public List<com.example.qr_order.dtos.response.EmployeeResponse> getAllEmployees() {
+    public List<EmployeeResponse> getAllEmployees() {
         List<User> employees = userRepo.findByRoleNotOrderByCreatedAtDesc(Role.OWNER);
         return employees.stream()
-                .map(user -> new com.example.qr_order.dtos.response.EmployeeResponse(
+                .map(user -> new EmployeeResponse(
                         user.getFullName(),
                         user.getUserName(),
                         user.getRole(),
                         user.getPasswordHash()))
-                .collect(java.util.stream.Collectors.toList());
+                .toList();
     }
 
     // Phần đăng nhập
@@ -133,7 +136,7 @@ public class AuthService {
         }
     }
 
-    public MessageResponse changePassword(Long userId, com.example.qr_order.dtos.ChangePasswordRequest request) {
+    public MessageResponse changePassword(Long userId,ChangePasswordRequest request) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
