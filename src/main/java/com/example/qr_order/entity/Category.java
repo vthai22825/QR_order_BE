@@ -32,7 +32,7 @@ public class Category extends BaseAuditEntity{
 
     public void setName(String name){
         if (name == null){
-            throw new IllegalArgumentException("Category name not null");
+            throw new IllegalArgumentException("Category name cannot be null");
         }
         this.name = name.trim();
     }
