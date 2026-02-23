@@ -20,6 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import vn.payos.PayOS;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,6 +37,7 @@ public class OrderService {
     private final OrderDetailRepo orderDetailRepo;
     private final DiningTableRepo tableRepo;
     private final ProductRepo productRepo;
+    private final PayOS payOS;
 
 
     @Transactional
@@ -146,6 +152,72 @@ public class OrderService {
         return mapToOrderResponse(currentOrder);
     }
 
+    public String generatePayOSLink(Long orderId) throws Exception {
+        // 1. Lấy thông tin đơn hàng từ Database của em
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // 2. Chuẩn bị thông tin thanh toán (Theo chuẩn v2)
+        String description = "Thanh toan don hang " + order.getId();
+        String returnUrl = "http://localhost:8386/success"; // Trang báo thành công
+        String cancelUrl = "http://localhost:8386/cancel";   // Trang báo hủy
+        long price = order.getTotalPrice().longValue();
+
+        // 3. Tạo danh sách sản phẩm (Items) để hiển thị trên PayOS
+        PaymentLinkItem item = PaymentLinkItem.builder()
+                .name("Hóa đơn bàn " + order.getTable().getId())
+                .quantity(1)
+                .price((Long) price)
+                .build();
+
+        // 4. Xây dựng Request tạo link thanh toán
+        CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest.builder()
+                .orderCode(order.getId()) // Sử dụng ID đơn hàng của em làm mã quản lý
+                .amount(price)
+                .description(description)
+                .returnUrl(returnUrl)
+                .cancelUrl(cancelUrl)
+                .item(item) // Thêm item vào để hiển thị chi tiết
+                .build();
+
+        // 5. Gọi API PayOS để tạo link
+        CreatePaymentLinkResponse response = payOS.paymentRequests().create(paymentData);
+
+        // Trả về cái link thanh toán cho Controller
+        return response.getCheckoutUrl();
+    }
+
+    @Transactional // Rất quan trọng: Đảm bảo dữ liệu không bị lỗi nửa chừng
+    public void checkoutByOrderId(Long orderId, PaymentMethod paymentMethod) throws Exception {
+
+        // 1. Tìm hóa đơn trong Database
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new Exception("Không tìm thấy hóa đơn với ID: " + orderId));
+
+        // 2. Chặn đánh kép: Kiểm tra nếu hóa đơn ĐÃ THANH TOÁN rồi thì bỏ qua
+        // (Phòng trường hợp mạng lag, PayOS bắn Webhook 2 lần cho cùng 1 đơn)
+        if (order.getStatus() == OrderStatus.PAID) {
+            System.out.println("⚠️ Hóa đơn " + orderId + " đã được thanh toán từ trước!");
+            return;
+        }
+
+        // 3. Cập nhật trạng thái Hóa đơn
+        order.setStatus(OrderStatus.PAID);
+        order.setPaymentMethod(paymentMethod); // Sẽ nhận BANK_TRANSFER từ Webhook
+
+        // 4. (Tùy chọn) Xử lý dọn bàn
+        // Nếu nghiệp vụ của em là khách trả tiền xong -> Bàn thành ghế trống
+        if (order.getTable() != null) {
+            order.getTable().setStatus(TableStatus.AVAILABLE);
+            // Nếu có tableRepo thì bật dòng dưới lên:
+            // tableRepo.save(order.getTable());
+        }
+
+        // 5. Lưu cập nhật xuống Database
+        orderRepo.save(order);
+
+        System.out.println("✅ ĐÃ GẠCH NỢ VÀ DỌN BÀN THÀNH CÔNG CHO ĐƠN: " + orderId);
+    }
 
     private OrderResponse mapToOrderResponse(Order order) {
         // Lấy lại danh sách chi tiết (Dùng hàm join fetch chống N+1)

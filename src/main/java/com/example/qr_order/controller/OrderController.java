@@ -33,20 +33,4 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    // Sửa lại API Checkout
-    @PostMapping("/table/{tableId}/checkout")
-    public ResponseEntity<ApiResponse<OrderResponse>> checkout(
-            @PathVariable Long tableId,
-            @RequestParam PaymentMethod paymentMethod // Nhận tham số qua URL (VD: ?paymentMethod=CASH)
-    ) {
-        OrderResponse paidOrder = orderService.checkout(tableId, paymentMethod);
-
-        ApiResponse<OrderResponse> response = ApiResponse.<OrderResponse>builder()
-                .status(HttpStatus.OK.value())
-                .message("Thanh toán thành công bằng " + paymentMethod)
-                .data(paidOrder)
-                .build();
-
-        return ResponseEntity.ok(response);
-    }
 }

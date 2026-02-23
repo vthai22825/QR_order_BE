@@ -57,12 +57,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/category/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/orders/table/*/checkout").hasAnyRole("OWNER", "CASHIER")
-
                         .requestMatchers(HttpMethod.GET, "/api/tables/**").permitAll()
 
+                        // 1. MỞ CỬA CHO KHÁCH ĐẶT MÓN
+                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+
+                        .requestMatchers("/api/payments/**").hasAnyRole("OWNER", "CASHIER")
+
                         .requestMatchers(HttpMethod.POST, "/api/orders/table/*").permitAll()
+
+                        .requestMatchers("/api/webhooks/**").permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
