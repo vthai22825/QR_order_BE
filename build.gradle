@@ -52,6 +52,16 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.29.0')
     implementation 'software.amazon.awssdk:s3'
     implementation 'net.coobird:thumbnailator:0.4.20'
+
+
+    // 1. Thư viện PayOS bản 2.0.1 ổn định như hãng dùng
+    implementation 'vn.payos:payos-java:2.0.1'
+
+    // 2. Thêm Jackson Datatype để xử lý thời gian (Date/Time)
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // 3. Đảm bảo có Thymeleaf để làm trang Success/Cancel
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     
 }
 
