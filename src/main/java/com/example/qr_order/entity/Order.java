@@ -1,6 +1,7 @@
 package com.example.qr_order.entity;
 
 import com.example.qr_order.enums.OrderStatus;
+import com.example.qr_order.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,10 @@ public class Order extends BaseAuditEntity {
     @Column(name = "note",length = 500)
     private String note;
 
+    @Column(name = "payment_method")
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
     public void setTable(DiningTable table){
         this.table = table;
     }
@@ -44,4 +49,5 @@ public class Order extends BaseAuditEntity {
     public void setNote(String note){
         this.note = note;
     }
+    public void setPaymentMethod(PaymentMethod paymentMethod){this.paymentMethod = paymentMethod;}
 }

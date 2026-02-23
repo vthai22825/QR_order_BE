@@ -9,6 +9,7 @@ import com.example.qr_order.entity.Order;
 import com.example.qr_order.entity.OrderDetail;
 import com.example.qr_order.entity.Product;
 import com.example.qr_order.enums.OrderStatus;
+import com.example.qr_order.enums.PaymentMethod;
 import com.example.qr_order.enums.TableStatus;
 import com.example.qr_order.repository.DiningTableRepo;
 import com.example.qr_order.repository.OrderDetailRepo;
@@ -40,7 +41,7 @@ public class OrderService {
         // BƯỚC 1: KIỂM TRA BÀN ĂN
         // ==========================================
         DiningTable table = tableRepo.findByIdAndIsDeletedFalse(request.getTableId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bàn ăn"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Table not found"));
 
         Order currentOrder;
 
@@ -62,7 +63,7 @@ public class OrderService {
             // Trường hợp 2: Bàn đã có khách -> Tìm cái Order đang UNPAID của bàn này
             currentOrder = orderRepo.findByTableIdAndStatusWithTable(table.getId(), OrderStatus.UNPAID)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Lỗi dữ liệu: Bàn có khách nhưng không tìm thấy hóa đơn chưa thanh toán!"));
+                            "Data error: The table has guests, but no unpaid bill was found."));
         }
 
         // ==========================================
@@ -74,7 +75,7 @@ public class OrderService {
             // 3.1: Kiểm tra món ăn có tồn tại và đang bán không?
             Product product = productRepo.findByIdActive(itemRequest.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "Sản phẩm ID " + itemRequest.getProductId() + " không tồn tại hoặc đã ngừng bán"));
+                            "The product with ID " + itemRequest.getProductId() + " does not exist or is no longer available for sale."));
 
             // 3.2: THUẬT TOÁN CỘNG DỒN (Tìm xem món này đã có trong Bill chưa)
             OrderDetail existingDetail = orderDetailRepo
@@ -118,6 +119,31 @@ public class OrderService {
 
         // Map data trả về cho Frontend hiển thị Bill hiện tại
         return mapToOrderResponse(savedOrder);
+    }
+
+    @Transactional
+    public OrderResponse checkout(Long tableId, PaymentMethod paymentMethod) {
+
+        DiningTable table = tableRepo.findByIdAndIsDeletedFalse(tableId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Table not found"));
+
+        if (table.getStatus() == TableStatus.AVAILABLE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This table is empty; there is no bill to pay.");
+        }
+
+        Order currentOrder = orderRepo.findByTableIdAndStatusWithTable(table.getId(), OrderStatus.UNPAID)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Data error: The table has guests, but no unpaid bill was found."));
+
+        // Cập nhật phương thức thanh toán và trạng thái
+        currentOrder.setPaymentMethod(paymentMethod); // <-- THÊM DÒNG NÀY
+        currentOrder.setStatus(OrderStatus.PAID);
+        orderRepo.save(currentOrder);
+
+        table.setStatus(TableStatus.AVAILABLE);
+        tableRepo.save(table);
+
+        return mapToOrderResponse(currentOrder);
     }
 
 

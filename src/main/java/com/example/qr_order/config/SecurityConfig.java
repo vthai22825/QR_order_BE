@@ -58,9 +58,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/category/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/api/orders/table/*/checkout").hasAnyRole("OWNER", "CASHIER")
+
                         .requestMatchers(HttpMethod.GET, "/api/tables/**").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/orders/table/*").permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
