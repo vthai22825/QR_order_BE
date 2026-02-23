@@ -1,0 +1,148 @@
+package com.example.qr_order.service;
+
+import com.example.qr_order.dtos.OrderDetailRequest;
+import com.example.qr_order.dtos.OrderRequest;
+import com.example.qr_order.dtos.response.OrderDetailResponse;
+import com.example.qr_order.dtos.response.OrderResponse;
+import com.example.qr_order.entity.DiningTable;
+import com.example.qr_order.entity.Order;
+import com.example.qr_order.entity.OrderDetail;
+import com.example.qr_order.entity.Product;
+import com.example.qr_order.enums.OrderStatus;
+import com.example.qr_order.enums.TableStatus;
+import com.example.qr_order.repository.DiningTableRepo;
+import com.example.qr_order.repository.OrderDetailRepo;
+import com.example.qr_order.repository.OrderRepo;
+import com.example.qr_order.repository.ProductRepo;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final OrderRepo orderRepo;
+    private final OrderDetailRepo orderDetailRepo;
+    private final DiningTableRepo tableRepo;
+    private final ProductRepo productRepo;
+
+
+    @Transactional
+    public OrderResponse processOrder(OrderRequest request) {
+
+        // ==========================================
+        // BƯỚC 1: KIỂM TRA BÀN ĂN
+        // ==========================================
+        DiningTable table = tableRepo.findByIdAndIsDeletedFalse(request.getTableId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bàn ăn"));
+
+        Order currentOrder;
+
+        // ==========================================
+        // BƯỚC 2: TÌM HOẶC TẠO MỚI HÓA ĐƠN (ORDER)
+        // ==========================================
+        if (table.getStatus() == TableStatus.AVAILABLE) {
+            // Trường hợp 1: Bàn trống -> Khách mới vào -> Tạo Order mới
+            currentOrder = new Order();
+            currentOrder.setTable(table);
+            currentOrder.setStatus(OrderStatus.UNPAID);
+            currentOrder.setTotalPrice(BigDecimal.ZERO);
+            currentOrder = orderRepo.save(currentOrder);
+
+            // CẬP NHẬT TRẠNG THÁI BÀN SANG "CÓ KHÁCH"
+            table.setStatus(TableStatus.OCCUPIED);
+            tableRepo.save(table);
+        } else {
+            // Trường hợp 2: Bàn đã có khách -> Tìm cái Order đang UNPAID của bàn này
+            currentOrder = orderRepo.findByTableIdAndStatusWithTable(table.getId(), OrderStatus.UNPAID)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Lỗi dữ liệu: Bàn có khách nhưng không tìm thấy hóa đơn chưa thanh toán!"));
+        }
+
+        // ==========================================
+        // BƯỚC 3: XỬ LÝ DANH SÁCH MÓN ĂN (ORDER DETAILS)
+        // ==========================================
+        BigDecimal totalAmountToAdd = BigDecimal.ZERO;
+
+        for (OrderDetailRequest itemRequest : request.getItems()) {
+            // 3.1: Kiểm tra món ăn có tồn tại và đang bán không?
+            Product product = productRepo.findByIdActive(itemRequest.getProductId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Sản phẩm ID " + itemRequest.getProductId() + " không tồn tại hoặc đã ngừng bán"));
+
+            // 3.2: THUẬT TOÁN CỘNG DỒN (Tìm xem món này đã có trong Bill chưa)
+            OrderDetail existingDetail = orderDetailRepo
+                    .findByOrderIdAndProductId(currentOrder.getId(), product.getId())
+                    .orElse(null);
+
+            if (existingDetail != null) {
+                // Đã gọi món này rồi -> Tăng số lượng lên
+                existingDetail.setQuantity(existingDetail.getQuantity() + itemRequest.getQuantity());
+
+                // Nối thêm ghi chú (Nếu khách note thêm)
+                if (itemRequest.getNote() != null && !itemRequest.getNote().isEmpty()) {
+                    String oldNote = existingDetail.getNote() == null ? "" : existingDetail.getNote() + " | ";
+                    existingDetail.setNote(oldNote + itemRequest.getNote());
+                }
+                orderDetailRepo.save(existingDetail);
+
+            } else {
+                // Lần đầu gọi món này -> Tạo dòng mới
+                OrderDetail newDetail = new OrderDetail();
+                newDetail.setOrder(currentOrder);
+                newDetail.setProduct(product);
+                newDetail.setQuantity(itemRequest.getQuantity());
+
+                // BÍ QUYẾT SENIOR: Lưu giá snapshot tại thời điểm đặt (Không dùng product.getPrice() về sau)
+                newDetail.setPrice(product.getPrice());
+                newDetail.setNote(itemRequest.getNote());
+                orderDetailRepo.save(newDetail);
+            }
+
+            // 3.3: Cộng dồn tiền để lát nữa cập nhật tổng tiền Order
+            BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            totalAmountToAdd = totalAmountToAdd.add(itemTotal);
+        }
+
+        // ==========================================
+        // BƯỚC 4: CẬP NHẬT TỔNG TIỀN VÀ TRẢ VỀ
+        // ==========================================
+        currentOrder.setTotalPrice(currentOrder.getTotalPrice().add(totalAmountToAdd));
+        Order savedOrder = orderRepo.save(currentOrder);
+
+        // Map data trả về cho Frontend hiển thị Bill hiện tại
+        return mapToOrderResponse(savedOrder);
+    }
+
+
+    private OrderResponse mapToOrderResponse(Order order) {
+        // Lấy lại danh sách chi tiết (Dùng hàm join fetch chống N+1)
+        List<OrderDetail> details = orderDetailRepo.findByOrderIdWithProduct(order.getId());
+
+        List<OrderDetailResponse> detailResponses = details.stream().map(d -> {
+            BigDecimal amount = d.getPrice().multiply(BigDecimal.valueOf(d.getQuantity()));
+            return new OrderDetailResponse(
+                    d.getId(),
+                    d.getProduct().getName(),
+                    d.getQuantity(),
+                    d.getPrice(),
+                    amount,
+                    d.getNote()
+            );
+        }).toList();
+
+        return new OrderResponse(
+                order.getId(),
+                order.getTable().getName(),
+                order.getStatus(),
+                order.getTotalPrice(),
+                detailResponses
+        );
+    }
+}
