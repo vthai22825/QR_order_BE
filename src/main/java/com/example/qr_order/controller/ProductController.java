@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
@@ -92,4 +94,32 @@ public class ProductController {
                 return ResponseEntity.ok(response);
         }
 
+        @PostMapping("/apply-promotion/{promotionId}")
+        public ResponseEntity<ApiResponse<Void>> applyPromotion(
+                @PathVariable Long promotionId,
+                @RequestBody List<Long> productIds
+        ) {
+                productService.applyPromotionToProducts(promotionId, productIds);
+
+                ApiResponse<Void> response = ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Áp dụng khuyến mãi cho sản phẩm thành công!")
+                        .build();
+
+                return ResponseEntity.ok(response);
+        }
+
+        @PostMapping("/remove-promotion")
+        public ResponseEntity<ApiResponse<Void>> removePromotion(
+                @RequestBody List<Long> productIds
+        ) {
+                productService.removePromotionFromProducts(productIds);
+
+                ApiResponse<Void> response = ApiResponse.<Void>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Đã gỡ khuyến mãi khỏi các sản phẩm được chọn!")
+                        .build();
+
+                return ResponseEntity.ok(response);
+        }
 }

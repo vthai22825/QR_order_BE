@@ -12,14 +12,23 @@ import java.util.Optional;
 
 public interface ProductRepo extends JpaRepository<Product, Long> {
 
-    @Query(value = "select p from Product p join fetch p.category c where p.isDeleted = false and c.isDeleted = false", countQuery = "select count(p) from Product p JOIN p.category c where p.isDeleted = false and c.isDeleted = false")
+    // THÊM: left join fetch p.promotion pr
+    @Query(
+            value = "select p from Product p join fetch p.category c left join fetch p.promotion pr where p.isDeleted = false and c.isDeleted = false",
+            countQuery = "select count(p) from Product p JOIN p.category c where p.isDeleted = false and c.isDeleted = false"
+    )
     Page<Product> findAllActive(Pageable pageable);
 
-    @Query(value = "select p from Product p join fetch p.category c where p.isDeleted = false and c.isDeleted = false and c.id = :categoryId", countQuery = "select count(p) from Product p JOIN p.category c where p.isDeleted = false and c.isDeleted = false and c.id = :categoryId")
-    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
+    // THÊM: left join fetch p.promotion pr
+    @Query(
+            value = "select p from Product p join fetch p.category c left join fetch p.promotion pr where p.isDeleted = false and c.isDeleted = false and c.id = :categoryId",
+            countQuery = "select count(p) from Product p JOIN p.category c where p.isDeleted = false and c.isDeleted = false and c.id = :categoryId"
+    )
+    Page<Product> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
 
     boolean existsByNameAndIsDeletedFalse(String name);
 
-    @Query("SELECT p FROM Product p JOIN FETCH p.category c WHERE p.id = :id AND p.isDeleted = false AND c.isDeleted = false")
+    // THÊM: LEFT JOIN FETCH p.promotion pr
+    @Query("SELECT p FROM Product p JOIN FETCH p.category c LEFT JOIN FETCH p.promotion pr WHERE p.id = :id AND p.isDeleted = false AND c.isDeleted = false")
     Optional<Product> findByIdActive(@Param("id") Long id);
 }

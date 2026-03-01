@@ -1,10 +1,7 @@
 package com.example.qr_order.dtos.response;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -13,6 +10,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ProductResponse {
     private Long id;
     private String name;
@@ -21,4 +19,8 @@ public class ProductResponse {
     private BigDecimal price;
     private Long categoryId;
     private String categoryName;
+
+    private BigDecimal salePrice;
+    private boolean isPromoted;
+    private String promotionTag;
 }
