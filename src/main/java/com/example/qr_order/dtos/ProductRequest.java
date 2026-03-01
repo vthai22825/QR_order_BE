@@ -18,7 +18,6 @@ public class ProductRequest {
     @Size(max = 400, message = "Product description not exceeding 400 character")
     private String description;
 
-    private MultipartFile image;
 
     @NotNull(message = "Price cannot be null")
     @DecimalMin(value = "0.0", inclusive = false, message = "the price must be greater than zero")

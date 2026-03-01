@@ -9,42 +9,49 @@ import com.example.qr_order.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/product")
+@RequestMapping("/api/products")
 @RequiredArgsConstructor
 public class ProductController {
 
         private final ProductService productService;
 
-        @PostMapping
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         public ResponseEntity<ApiResponse<Product>> createProduct(
-                        @ModelAttribute @Valid ProductRequest productRequest) {
-                Product newProduct = productService.create(productRequest);
+                @Valid @RequestPart("data") ProductRequest request,
+                @RequestPart(value = "file", required = false) MultipartFile file
+        ) {
+                Product newProduct = productService.create(request, file);
 
                 ApiResponse<Product> apiResponse = ApiResponse.<Product>builder()
-                                .status(HttpStatus.CREATED.value())
-                                .message("Create product successful")
-                                .data(newProduct)
-                                .build();
+                        .status(HttpStatus.CREATED.value())
+                        .message("Create product successful")
+                        .data(newProduct)
+                        .build();
+
                 return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
         }
 
-        @PutMapping("/{id}")
+        @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         public ResponseEntity<ApiResponse<Product>> updateProduct(
-                        @PathVariable Long id,
-                        @ModelAttribute @Valid ProductRequest request) {
-                Product updatedProduct = productService.update(id, request);
+                @PathVariable Long id,
+                @Valid @RequestPart("data") ProductRequest request,
+                @RequestPart(value = "file", required = false) MultipartFile file
+        ) {
+                Product updatedProduct = productService.update(id, request, file);
 
                 ApiResponse<Product> response = ApiResponse.<Product>builder()
-                                .status(HttpStatus.OK.value())
-                                .message("Update product successful")
-                                .data(updatedProduct)
-                                .build();
+                        .status(HttpStatus.OK.value())
+                        .message("Update product successful")
+                        .data(updatedProduct)
+                        .build();
 
                 return ResponseEntity.ok(response);
         }

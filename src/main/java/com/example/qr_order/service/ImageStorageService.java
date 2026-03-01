@@ -95,21 +95,30 @@ public class ImageStorageService {
         String key = (folderName != null && !folderName.isEmpty()) ? folderName + "/" + fileName : fileName;
 
         try {
-            // Nén ảnh hoàn toàn trên RAM
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            Thumbnails.of(file.getInputStream())
-                    .size(1024, 1024)
-                    .outputQuality(0.8)
-                    .toOutputStream(os);
+            byte[] buffer;
+            String contentType = file.getContentType();
 
-            byte[] buffer = os.toByteArray();
+            // KIỂM TRA ĐỊNH DẠNG: Bỏ qua nén đối với WebP, GIF, SVG
+            if (contentType != null && (contentType.contains("webp") || contentType.contains("gif") || contentType.contains("svg"))) {
+                // Lấy thẳng mảng byte của file gốc
+                buffer = file.getBytes();
+            } else {
+                // NẾU LÀ JPG/PNG: Vẫn nén ảnh hoàn toàn trên RAM như cũ
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                Thumbnails.of(file.getInputStream())
+                        .size(1024, 1024)
+                        .outputQuality(0.8)
+                        .toOutputStream(os);
+                buffer = os.toByteArray();
+            }
+
             ByteArrayInputStream is = new ByteArrayInputStream(buffer);
 
             // Cấu hình đẩy lên R2
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    .contentType(file.getContentType())
+                    .contentType(contentType) // Dùng contentType thực tế của file
                     .contentLength((long) buffer.length)
                     .build();
 
@@ -120,7 +129,6 @@ public class ImageStorageService {
 
         } catch (Exception e) {
             log.error("CRITICAL: Failed to upload image to R2. File: {}, Error: {}", fileName, e.getMessage(), e);
-            // Có thể throw lỗi ra để API báo lỗi 500 cho FE biết là upload tạch, không lưu DB nữa
             throw new RuntimeException("Lỗi khi upload ảnh lên server!");
         }
     }

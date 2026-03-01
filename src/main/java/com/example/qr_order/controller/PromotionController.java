@@ -22,10 +22,9 @@ public class PromotionController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Promotion>> createPromotion(
-            @Valid @RequestPart("data") PromotionRequest request, // Hứng JSON ngon lành cành đào
-            @RequestPart(value = "file", required = false) MultipartFile file // Hứng file riêng biệt
+            @Valid @RequestPart("data") PromotionRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        // Truyền thẳng request và file xuống Service
         Promotion savedPromotion = promotionService.create(request, file);
 
         ApiResponse<Promotion> response = ApiResponse.<Promotion>builder()
