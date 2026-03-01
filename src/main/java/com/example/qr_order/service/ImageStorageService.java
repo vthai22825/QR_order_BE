@@ -84,4 +84,44 @@ public class ImageStorageService {
             log.error("CRITICAL: Failed to upload image to R2. File: {}, Error: {}", fileName, e.getMessage(), e);
         }
     }
+
+    // Bỏ @Async, đổi void thành String
+    public String uploadImageSync(MultipartFile file, String folderName) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        String key = (folderName != null && !folderName.isEmpty()) ? folderName + "/" + fileName : fileName;
+
+        try {
+            // Nén ảnh hoàn toàn trên RAM
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            Thumbnails.of(file.getInputStream())
+                    .size(1024, 1024)
+                    .outputQuality(0.8)
+                    .toOutputStream(os);
+
+            byte[] buffer = os.toByteArray();
+            ByteArrayInputStream is = new ByteArrayInputStream(buffer);
+
+            // Cấu hình đẩy lên R2
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType(file.getContentType())
+                    .contentLength((long) buffer.length)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(is, buffer.length));
+
+            // Trả thẳng URL về cho người gọi hàm
+            return publicDomain + "/" + key;
+
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to upload image to R2. File: {}, Error: {}", fileName, e.getMessage(), e);
+            // Có thể throw lỗi ra để API báo lỗi 500 cho FE biết là upload tạch, không lưu DB nữa
+            throw new RuntimeException("Lỗi khi upload ảnh lên server!");
+        }
+    }
 }

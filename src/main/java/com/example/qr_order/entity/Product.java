@@ -40,6 +40,9 @@ public class Product extends BaseAuditEntity{
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion;
 
     public void setName(String name){
 
@@ -70,4 +73,5 @@ public class Product extends BaseAuditEntity{
     public void setCategory(Category category){
         this.category = category;
     }
+    public void setPromotion(Promotion promotion){this.promotion = promotion;}
 }
