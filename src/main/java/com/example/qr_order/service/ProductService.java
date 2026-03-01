@@ -18,9 +18,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 
@@ -33,44 +35,44 @@ public class ProductService {
     private final PromotionRepo promotionRepo;
 
     @Transactional
-    public Product create(ProductRequest productRequest) {
+    public Product create(ProductRequest productRequest, MultipartFile file) {
         Category category = categoryRepo.findById(productRequest.getCategoryId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "category with id " + productRequest.getCategoryId() + " not found"));
 
         if (category.isDeleted()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot created product with deleted category");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create product with deleted category");
         }
 
-        if (productRepo.existsByNameAndIsDeletedFalse(productRequest.getName())) {
+
+        String productName = productRequest.getName().trim();
+
+        if (productRepo.existsByNameAndIsDeletedFalse(productName)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Product name '" + productRequest.getName() + "' already exists");
+                    "Product name '" + productName + "' already exists");
         }
 
         Product newProduct = new Product();
-        newProduct.setName(productRequest.getName());
+        newProduct.setName(productName);
         newProduct.setDescription(productRequest.getDescription());
-
         newProduct.setPrice(productRequest.getPrice());
         newProduct.setCategory(category);
 
-        Product savedProduct = productRepo.save(newProduct);
-
-        if (productRequest.getImage() != null && !productRequest.getImage().isEmpty()) {
-            imageStorageService.uploadImage(productRequest.getImage(), "products", (imageUrl) -> {
-                savedProduct.setImageUrl(imageUrl);
-                productRepo.save(savedProduct);
-            });
+        if (file != null && !file.isEmpty()) {
+            String imageUrl = imageStorageService.uploadImageSync(file, "product");
+            newProduct.setImageUrl(imageUrl);
         }
 
-        return savedProduct;
+        return productRepo.save(newProduct);
     }
 
     @Transactional
-    public Product update(Long id, ProductRequest productRequest) {
+    public Product update(Long id, ProductRequest productRequest, MultipartFile file) {
+
         Product existing = productRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
+        // 1. Cập nhật Category
         if (productRequest.getCategoryId() != null
                 && !productRequest.getCategoryId().equals(existing.getCategory().getId())) {
 
@@ -84,30 +86,33 @@ public class ProductService {
             existing.setCategory(newCategory);
         }
 
-        if (productRequest.getName() != null && !productRequest.getName().equals(existing.getName())) {
-
-            if (productRepo.existsByNameAndIsDeletedFalse(productRequest.getName())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Product name already exists");
+        // 2. Cập nhật Tên món (Có trim() cho an toàn)
+        if (productRequest.getName() != null && !productRequest.getName().trim().isEmpty()) {
+            String newName = productRequest.getName().trim();
+            if (!newName.equals(existing.getName())) {
+                if (productRepo.existsByNameAndIsDeletedFalse(newName)) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Product name already exists");
+                }
+                existing.setName(newName);
             }
-
-            existing.setName(productRequest.getName());
         }
 
+        // 3. Cập nhật Mô tả
         if (productRequest.getDescription() != null) {
             existing.setDescription(productRequest.getDescription());
         }
-        if (productRequest.getImage() != null && !productRequest.getImage().isEmpty()) {
-            imageStorageService.uploadImage(productRequest.getImage(), "products", (imageUrl) -> {
-                existing.setImageUrl(imageUrl);
-                productRepo.save(existing);
-            });
-        }
+
+        // 4. Cập nhật Giá
         if (productRequest.getPrice() != null) {
             existing.setPrice(productRequest.getPrice());
         }
 
-        return productRepo.save(existing);
+        if (file != null && !file.isEmpty()) {
+            String imageUrl = imageStorageService.uploadImageSync(file, "products");
+            existing.setImageUrl(imageUrl);
+        }
 
+        return productRepo.save(existing);
     }
 
     public PageResponse<ProductResponse> getAll(int page, int size) {
@@ -215,6 +220,9 @@ public class ProductService {
                 }
             }
         }
+
+        salePrice = salePrice.divide(BigDecimal.valueOf(1000), 0, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(1000));
 
         return ProductResponse.builder()
                 .id(product.getId())
