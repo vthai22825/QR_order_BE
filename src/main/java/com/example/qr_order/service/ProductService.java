@@ -221,7 +221,8 @@ public class ProductService {
             }
         }
 
-        salePrice = salePrice.divide(BigDecimal.valueOf(1000), 0, RoundingMode.HALF_UP)
+        // fix sửa lỗi làm tròn xuống
+        salePrice = salePrice.divide(BigDecimal.valueOf(1000), 0, RoundingMode.DOWN)
                 .multiply(BigDecimal.valueOf(1000));
 
         return ProductResponse.builder()
