@@ -57,34 +57,29 @@ public class ProductController {
         }
 
         @GetMapping
-        public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getAllProducts(
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
-                PageResponse<ProductResponse> result = productService.getAll(page, size);
+        public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts() {
 
-                ApiResponse<PageResponse<ProductResponse>> response = ApiResponse
-                                .<PageResponse<ProductResponse>>builder()
-                                .status(HttpStatus.OK.value())
-                                .message("Get all products successful")
-                                .data(result)
-                                .build();
+                List<ProductResponse> products = productService.getAllProducts();
+
+                ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Lấy toàn bộ thực đơn thành công")
+                        .data(products)
+                        .build();
 
                 return ResponseEntity.ok(response);
         }
 
         @GetMapping("/category/{categoryId}")
-        public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getProductsByCategory(
-                        @PathVariable Long categoryId,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size) {
-                PageResponse<ProductResponse> result = productService.getByCategoryId(categoryId, page, size);
+        public ResponseEntity<ApiResponse<List<ProductResponse>>> getByCategoryId(@PathVariable Long categoryId) {
 
-                ApiResponse<PageResponse<ProductResponse>> response = ApiResponse
-                                .<PageResponse<ProductResponse>>builder()
-                                .status(HttpStatus.OK.value())
-                                .message("Get products by category successful")
-                                .data(result)
-                                .build();
+                List<ProductResponse> products = productService.getByCategoryId(categoryId);
+
+                ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Lấy danh sách món ăn theo danh mục thành công")
+                        .data(products) // Nhét thẳng cái List vào
+                        .build();
 
                 return ResponseEntity.ok(response);
         }

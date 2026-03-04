@@ -117,51 +117,45 @@ public class ProductService {
         return productRepo.save(existing);
     }
 
-    public PageResponse<ProductResponse> getAll(int page, int size) {
-
+    public List<ProductResponse> getAllProducts() {
+        // Vẫn giữ nguyên chiến thuật sắp xếp: Category trước, Món mới sau
         Sort sort = Sort.by(
                 Sort.Order.asc("category.id"),
                 Sort.Order.desc("id")
         );
-        Pageable pageable = PageRequest.of(page, size,sort);
 
-        Page<Product> productPage = productRepo.findAllActive(pageable);
+        // Gọi DB lấy TẤT CẢ trong 1 nốt nhạc
+        List<Product> products = productRepo.findByIsDeletedFalse(sort);
 
-        List<ProductResponse> productResponses = productPage.getContent().stream()
+        // Map sang DTO (đã bao gồm tính giá khuyến mãi, làm tròn...)
+        return products.stream()
                 .map(this::mapToProductResponse)
-                .toList();
-
-        return PageResponse.<ProductResponse>builder()
-                .page(productPage.getNumber())
-                .size(productPage.getSize())
-                .total(productPage.getTotalElements())
-                .items(productResponses)
-                .build();
+                .collect(Collectors.toList());
     }
 
-    public PageResponse<ProductResponse> getByCategoryId(Long categoryId, int page, int size) {
+    public List<ProductResponse> getByCategoryId(Long categoryId) {
 
+        // 1. Kiểm tra Category có tồn tại và chưa bị xóa không
         Category category = categoryRepo.findById(categoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
-        if(category.isDeleted()) {
+        if (category.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category has been deleted");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        // 2. Tạo quy tắc sắp xếp: Trong cùng 1 danh mục, đưa món Best Seller lên trước, sau đó xếp theo món mới nhất (ID giảm dần)
+        Sort sort = Sort.by(
+                Sort.Order.desc("isBestSeller"),
+                Sort.Order.desc("id")
+        );
 
-        Page<Product> productPage = productRepo.findByCategoryId(categoryId, pageable);
+        // 3. Gọi DB lấy 1 phát ra hết luôn cái List
+        List<Product> products = productRepo.findByCategoryId(categoryId, sort);
 
-        List<ProductResponse> productResponses = productPage.getContent().stream()
+        // 4. Map sang DTO và trả về
+        return products.stream()
                 .map(this::mapToProductResponse)
-                .toList();
-
-        return PageResponse.<ProductResponse>builder()
-                .page(productPage.getNumber())
-                .size(productPage.getSize())
-                .total(productPage.getTotalElements())
-                .items(productResponses)
-                .build();
+                .collect(Collectors.toList()); // Dùng .toList() nếu em xài Java 16+
     }
     @Transactional
     public void delete(Long id) {
