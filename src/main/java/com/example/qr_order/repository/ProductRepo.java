@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepo extends JpaRepository<Product, Long> {
@@ -31,4 +32,6 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
     // THÊM: LEFT JOIN FETCH p.promotion pr
     @Query("SELECT p FROM Product p JOIN FETCH p.category c LEFT JOIN FETCH p.promotion pr WHERE p.id = :id AND p.isDeleted = false AND c.isDeleted = false")
     Optional<Product> findByIdActive(@Param("id") Long id);
+
+    List<Product> findByNameContainingIgnoreCaseAndIsDeletedFalse(String keyword);
 }

@@ -129,4 +129,16 @@ public class ProductController {
 
                 return ResponseEntity.ok(response);
         }
+
+        @GetMapping("/search")
+        public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProduct(@RequestParam("keyword") String keyword){
+                List<ProductResponse> searchResult = productService.searchProduct(keyword);
+
+                ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Tìm kiếm thành công")
+                        .data(searchResult)
+                        .build();
+                return ResponseEntity.ok(response);
+        }
 }
