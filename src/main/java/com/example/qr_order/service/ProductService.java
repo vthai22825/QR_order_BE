@@ -24,7 +24,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -188,6 +190,20 @@ public class ProductService {
         }
         productRepo.saveAll(products);
     }
+
+
+    public List<ProductResponse> searchProduct(String keyword){
+
+        if (keyword == null && keyword.trim().isEmpty()){
+            return new ArrayList<>();
+        }
+        List<Product> products = productRepo.findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword.trim());
+
+        return products.stream()
+                .map(this::mapToProductResponse)
+                .collect(Collectors.toList());
+    }
+
 
     // HÀM PHỤ TRỢ: CHUYÊN BIẾN PRODUCT THÀNH PRODUCT_RESPONSE VÀ TÍNH GIÁ ĐỘNG
     private ProductResponse mapToProductResponse(Product product) {
