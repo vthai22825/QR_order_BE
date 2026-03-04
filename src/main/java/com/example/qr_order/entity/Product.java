@@ -44,6 +44,9 @@ public class Product extends BaseAuditEntity{
     @JoinColumn(name = "promotion_id")
     private Promotion promotion;
 
+    @Column(name = "is_best_seller")
+    private Boolean isBestSeller = false;
+
     public void setName(String name){
 
         if (name == null){
@@ -74,4 +77,7 @@ public class Product extends BaseAuditEntity{
         this.category = category;
     }
     public void setPromotion(Promotion promotion){this.promotion = promotion;}
+    public void setBestSeller(Boolean bestSeller) {
+        this.isBestSeller = (bestSeller != null) ? bestSeller : false;
+    }
 }

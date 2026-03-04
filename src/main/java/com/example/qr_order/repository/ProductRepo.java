@@ -34,4 +34,6 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
     Optional<Product> findByIdActive(@Param("id") Long id);
 
     List<Product> findByNameContainingIgnoreCaseAndIsDeletedFalse(String keyword);
+
+    List<Product> findByIsBestSellerTrueAndIsDeletedFalse();
 }

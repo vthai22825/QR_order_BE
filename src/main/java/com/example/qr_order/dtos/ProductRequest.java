@@ -24,4 +24,6 @@ public class ProductRequest {
     private BigDecimal price;
 
     private Long categoryId;
+
+    private Boolean isBestSeller;
 }

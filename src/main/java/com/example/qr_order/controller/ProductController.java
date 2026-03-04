@@ -141,4 +141,33 @@ public class ProductController {
                         .build();
                 return ResponseEntity.ok(response);
         }
+
+        @PutMapping("/{id}/best-seller")
+        public ResponseEntity<ApiResponse<ProductResponse>> updateBestSellerStatus(
+                @PathVariable Long id,
+                @RequestParam("status") boolean status // Nhận true hoặc false từ URL
+        ) {
+                ProductResponse updatedProduct = productService.updateBestSellerStatus(id, status);
+
+                ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
+                        .status(HttpStatus.OK.value())
+                        .message(status ? "Đã thêm món vào danh sách Best Seller!" : "Đã gỡ món khỏi danh sách Best Seller!")
+                        .data(updatedProduct)
+                        .build();
+
+                return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/best-sellers")
+        public ResponseEntity<ApiResponse<List<ProductResponse>>> getBestSellers() {
+                List<ProductResponse> bestSellers = productService.getBestSellers();
+
+                ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Lấy danh sách món bán chạy thành công")
+                        .data(bestSellers)
+                        .build();
+
+                return ResponseEntity.ok(response);
+        }
 }
