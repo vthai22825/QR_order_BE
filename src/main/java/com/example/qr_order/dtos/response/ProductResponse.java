@@ -20,6 +20,8 @@ public class ProductResponse {
     private Long categoryId;
     private String categoryName;
 
+    private Boolean isBestSeller;
+
     private BigDecimal salePrice;
     private boolean isPromoted;
     private String promotionTag;

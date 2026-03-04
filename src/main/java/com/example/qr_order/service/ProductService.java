@@ -118,7 +118,12 @@ public class ProductService {
     }
 
     public PageResponse<ProductResponse> getAll(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+        Sort sort = Sort.by(
+                Sort.Order.asc("category.id"),
+                Sort.Order.desc("id")
+        );
+        Pageable pageable = PageRequest.of(page, size,sort);
 
         Page<Product> productPage = productRepo.findAllActive(pageable);
 
@@ -200,6 +205,30 @@ public class ProductService {
         List<Product> products = productRepo.findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword.trim());
 
         return products.stream()
+                .map(this::mapToProductResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ProductResponse updateBestSellerStatus(Long id, boolean status) {
+        // 1. Tìm món ăn
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        // 2. Cập nhật trạng thái Best Seller theo tham số truyền vào
+        product.setBestSeller(status);
+
+        // 3. Lưu xuống Database
+        Product savedProduct = productRepo.save(product);
+
+        // 4. Trả về Response xịn xò có tính toán luôn giá Sale
+        return mapToProductResponse(savedProduct);
+    }
+
+    public List<ProductResponse> getBestSellers() {
+        List<Product> bestSellers = productRepo.findByIsBestSellerTrueAndIsDeletedFalse();
+
+        return bestSellers.stream()
                 .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }
