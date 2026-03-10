@@ -65,6 +65,8 @@ public class SecurityConfig {
                         // 1. MỞ CỬA CHO KHÁCH ĐẶT MÓN
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**").permitAll()
+
                         .requestMatchers("/api/payments/**").hasAnyRole("OWNER", "CASHIER")
 
                         .requestMatchers(HttpMethod.POST, "/api/orders/table/*").permitAll()

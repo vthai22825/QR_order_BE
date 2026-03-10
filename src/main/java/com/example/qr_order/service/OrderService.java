@@ -243,4 +243,13 @@ public class OrderService {
                 detailResponses
         );
     }
+
+    public OrderResponse getActiveOrderByTable(Long tableId) {
+        // Gọi xuống DB tìm đơn hàng UNPAID của bàn này
+        Order activeOrder = orderRepo.findActiveOrderByTableId(tableId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bàn này hiện chưa có đơn hàng nào đang hoạt động"));
+
+        // Map sang DTO để trả về cho an toàn (Nhớ tạo hàm mapToOrderResponse nếu em chưa có nhé)
+        return mapToOrderResponse(activeOrder);
+    }
 }

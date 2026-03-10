@@ -33,4 +33,17 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/table/{tableId}/active")
+    public ResponseEntity<ApiResponse<OrderResponse>> getActiveOrder(@PathVariable Long tableId) {
+
+        OrderResponse response = orderService.getActiveOrderByTable(tableId);
+
+        ApiResponse<OrderResponse> apiResponse = ApiResponse.<OrderResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy thông tin đơn hàng hiện tại thành công")
+                .data(response)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
 }
