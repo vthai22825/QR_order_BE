@@ -22,4 +22,7 @@ public interface OrderRepo extends JpaRepository<Order, Long> {
 
     @Query("select o from Order o join fetch o.table where o.id = :orderId")
     Optional<Order> findByIdWithTable(@Param("orderId") Long orderId);
+
+    @Query("SELECT o FROM Order o WHERE o.table.id = :tableId AND o.status = 'UNPAID'")
+    Optional<Order> findActiveOrderByTableId(@Param("tableId") Long tableId);
 }

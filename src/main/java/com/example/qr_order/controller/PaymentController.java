@@ -19,7 +19,7 @@ public class PaymentController {
     @PostMapping("/table/{tableId}/checkout")
     public ResponseEntity<ApiResponse<OrderResponse>> checkout(
             @PathVariable Long tableId,
-            @RequestParam PaymentMethod paymentMethod // Nhận tham số qua URL (VD: ?paymentMethod=CASH)
+                @RequestParam PaymentMethod paymentMethod // Nhận tham số qua URL (VD: ?paymentMethod=CASH)
     ) {
         OrderResponse paidOrder = orderService.checkout(tableId, paymentMethod);
 
