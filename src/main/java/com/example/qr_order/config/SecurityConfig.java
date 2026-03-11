@@ -72,6 +72,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/orders/table/*").permitAll()
 
                         .requestMatchers("/api/webhooks/**").permitAll()
+                        
+                        // Cho phép kết nối WebSocket tự do
+                        .requestMatchers("/ws/**").permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
