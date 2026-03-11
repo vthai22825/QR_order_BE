@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ import java.util.List;
 public class ProductController {
 
         private final ProductService productService;
+        private final SimpMessagingTemplate messagingTemplate;
 
         @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         public ResponseEntity<ApiResponse<Product>> createProduct(
@@ -29,6 +31,7 @@ public class ProductController {
                 @RequestPart(value = "file", required = false) MultipartFile file
         ) {
                 Product newProduct = productService.create(request, file);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Thêm mới)");
 
                 ApiResponse<Product> apiResponse = ApiResponse.<Product>builder()
                         .status(HttpStatus.CREATED.value())
@@ -46,6 +49,7 @@ public class ProductController {
                 @RequestPart(value = "file", required = false) MultipartFile file
         ) {
                 Product updatedProduct = productService.update(id, request, file);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Sửa đổi)");
 
                 ApiResponse<Product> response = ApiResponse.<Product>builder()
                         .status(HttpStatus.OK.value())
@@ -87,6 +91,7 @@ public class ProductController {
         @DeleteMapping("/{id}")
         public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
                 productService.delete(id);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Xoá)");
 
                 ApiResponse<Void> response = ApiResponse.<Void>builder()
                                 .status(HttpStatus.OK.value())
@@ -102,6 +107,7 @@ public class ProductController {
                 @RequestBody List<Long> productIds
         ) {
                 productService.applyPromotionToProducts(promotionId, productIds);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Áp dụng KM)");
 
                 ApiResponse<Void> response = ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
@@ -116,6 +122,7 @@ public class ProductController {
                 @RequestBody List<Long> productIds
         ) {
                 productService.removePromotionFromProducts(productIds);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Gỡ KM)");
 
                 ApiResponse<Void> response = ApiResponse.<Void>builder()
                         .status(HttpStatus.OK.value())
@@ -143,6 +150,7 @@ public class ProductController {
                 @RequestParam("status") boolean status // Nhận true hoặc false từ URL
         ) {
                 ProductResponse updatedProduct = productService.updateBestSellerStatus(id, status);
+                messagingTemplate.convertAndSend("/topic/products", "Danh sách sản phẩm mới được cập nhật (Trending)");
 
                 ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
                         .status(HttpStatus.OK.value())

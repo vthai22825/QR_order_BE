@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 
@@ -19,10 +20,12 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping()
     public ResponseEntity<ApiResponse<Category>> createdCategory(@RequestBody @Valid CategoryRequest categoryRequest){
         Category newCategory = categoryService.create(categoryRequest);
+        messagingTemplate.convertAndSend("/topic/categories", "Danh sách danh mục mới được cập nhật (Thêm mới)");
 
         ApiResponse<Category> response = ApiResponse.<Category>builder()
                 .status(HttpStatus.CREATED.value())
@@ -35,6 +38,7 @@ public class CategoryController {
     @PutMapping("{id}")
     public ResponseEntity<ApiResponse<Category>> updateCategory(@PathVariable Long id, @RequestBody @Valid  CategoryRequest categoryRequest ){
         Category updatedCategory = categoryService.update(id, categoryRequest);
+        messagingTemplate.convertAndSend("/topic/categories", "Danh sách danh mục mới được cập nhật (Sửa đổi)");
 
         ApiResponse<Category> response = ApiResponse.<Category>builder()
                 .status(HttpStatus.OK.value())
@@ -49,6 +53,7 @@ public class CategoryController {
     @DeleteMapping("{id}")
     public ResponseEntity<ApiResponse<Category>> deleteCategory (@PathVariable Long id){
         Category deletedCategory = categoryService.delete(id);
+        messagingTemplate.convertAndSend("/topic/categories", "Danh sách danh mục mới được cập nhật (Xoá)");
 
         ApiResponse<Category> response = ApiResponse.<Category>builder()
                 .status(HttpStatus.OK.value())
