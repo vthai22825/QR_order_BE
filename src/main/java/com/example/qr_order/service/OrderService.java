@@ -8,8 +8,10 @@ import com.example.qr_order.entity.DiningTable;
 import com.example.qr_order.entity.Order;
 import com.example.qr_order.entity.OrderDetail;
 import com.example.qr_order.entity.Product;
+import com.example.qr_order.entity.Promotion;
 import com.example.qr_order.enums.OrderStatus;
 import com.example.qr_order.enums.PaymentMethod;
+import com.example.qr_order.enums.DiscountType;
 import com.example.qr_order.enums.TableStatus;
 import com.example.qr_order.repository.DiningTableRepo;
 import com.example.qr_order.repository.OrderDetailRepo;
@@ -27,6 +29,7 @@ import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
 
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -83,7 +86,10 @@ public class OrderService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                             "The product with ID " + itemRequest.getProductId() + " does not exist or is no longer available for sale."));
 
-            // 3.2: THUẬT TOÁN CỘNG DỒN (Tìm xem món này đã có trong Bill chưa)
+            // 3.2: Tính giá thực tế (có xét khuyến mãi)
+            BigDecimal effectivePrice = getEffectivePrice(product);
+
+            // 3.3: THUẬT TOÁN CỘNG DỒN (Tìm xem món này đã có trong Bill chưa)
             OrderDetail existingDetail = orderDetailRepo
                     .findByOrderIdAndProductId(currentOrder.getId(), product.getId())
                     .orElse(null);
@@ -91,6 +97,9 @@ public class OrderService {
             if (existingDetail != null) {
                 // Đã gọi món này rồi -> Tăng số lượng lên
                 existingDetail.setQuantity(existingDetail.getQuantity() + itemRequest.getQuantity());
+
+                // Cập nhật giá theo promotion mới nhất (phòng trường hợp promotion thay đổi giữa chừng)
+                existingDetail.setPrice(effectivePrice);
 
                 // Nối thêm ghi chú (Nếu khách note thêm)
                 if (itemRequest.getNote() != null && !itemRequest.getNote().isEmpty()) {
@@ -106,14 +115,14 @@ public class OrderService {
                 newDetail.setProduct(product);
                 newDetail.setQuantity(itemRequest.getQuantity());
 
-                // BÍ QUYẾT SENIOR: Lưu giá snapshot tại thời điểm đặt (Không dùng product.getPrice() về sau)
-                newDetail.setPrice(product.getPrice());
+                // Lưu giá snapshot SAU KHI ĐÃ ÁP DỤNG KHUYẾN MÃI
+                newDetail.setPrice(effectivePrice);
                 newDetail.setNote(itemRequest.getNote());
                 orderDetailRepo.save(newDetail);
             }
 
-            // 3.3: Cộng dồn tiền để lát nữa cập nhật tổng tiền Order
-            BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            // 3.4: Cộng dồn tiền để lát nữa cập nhật tổng tiền Order
+            BigDecimal itemTotal = effectivePrice.multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
             totalAmountToAdd = totalAmountToAdd.add(itemTotal);
         }
 
@@ -251,5 +260,49 @@ public class OrderService {
 
         // Map sang DTO để trả về cho an toàn (Nhớ tạo hàm mapToOrderResponse nếu em chưa có nhé)
         return mapToOrderResponse(activeOrder);
+    }
+
+    /**
+     * Tính giá thực tế của sản phẩm sau khi áp dụng khuyến mãi (Promotion).
+     * Logic đồng bộ 100% với ProductService.mapToProductResponse() để đảm bảo
+     * giá khi đặt món = giá FE hiển thị cho khách hàng.
+     */
+    private BigDecimal getEffectivePrice(Product product) {
+        BigDecimal originalPrice = product.getPrice();
+
+        if (product.getPromotion() == null) {
+            return originalPrice;
+        }
+
+        Promotion promo = product.getPromotion();
+
+        // Kiểm tra promotion còn hiệu lực không (đang active, chưa xóa, trong thời hạn)
+        if (!promo.isValid(java.time.Instant.now())) {
+            return originalPrice;
+        }
+
+        BigDecimal salePrice;
+
+        if (promo.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+            // Trừ thẳng tiền: VD giá 3000, giảm 1000 → 2000
+            salePrice = originalPrice.subtract(promo.getDiscountValue());
+        } else {
+            // PERCENTAGE: VD giá 3000, giảm 30% → discountAmount = 900 → salePrice = 2100
+            BigDecimal discountAmount = originalPrice
+                    .multiply(promo.getDiscountValue())
+                    .divide(BigDecimal.valueOf(100));
+            salePrice = originalPrice.subtract(discountAmount);
+        }
+
+        // Nếu giảm lố khiến giá bị âm thì set về 0
+        if (salePrice.compareTo(BigDecimal.ZERO) < 0) {
+            salePrice = BigDecimal.ZERO;
+        }
+
+        // Làm tròn xuống theo bội 1000 (giống ProductService)
+        salePrice = salePrice.divide(BigDecimal.valueOf(1000), 0, RoundingMode.DOWN)
+                .multiply(BigDecimal.valueOf(1000));
+
+        return salePrice;
     }
 }

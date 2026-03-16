@@ -11,12 +11,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
@@ -29,6 +32,9 @@ public class OrderController {
                 .message("Đặt món thành công!")
                 .data(currentOrder)
                 .build();
+
+        // Gửi thông báo WebSocket tới Thu ngân khi có đơn hàng mới
+        messagingTemplate.convertAndSend("/topic/orders", "Đơn hàng mới được tạo hoặc cập nhật");
 
         return ResponseEntity.ok(response);
     }
