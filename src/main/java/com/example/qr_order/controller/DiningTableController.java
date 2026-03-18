@@ -3,7 +3,6 @@ package com.example.qr_order.controller;
 import com.example.qr_order.dtos.DiningTableRequest;
 import com.example.qr_order.dtos.response.ApiResponse;
 import com.example.qr_order.dtos.response.DiningTableResponse;
-import com.example.qr_order.dtos.response.PageResponse;
 import com.example.qr_order.enums.TableStatus;
 import com.example.qr_order.service.DiningTableService;
 import jakarta.validation.Valid;
@@ -11,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tables")
@@ -65,13 +66,12 @@ public class DiningTableController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<DiningTableResponse>>> getAllTables(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+    public ResponseEntity<ApiResponse<List<DiningTableResponse>>> getAllTables(
+            @RequestParam(required = false) TableStatus status
     ) {
-        PageResponse<DiningTableResponse> result = tableService.getAll(page, size);
+        List<DiningTableResponse> result = tableService.getAll(status);
 
-        ApiResponse<PageResponse<DiningTableResponse>> response = ApiResponse.<PageResponse<DiningTableResponse>>builder()
+        ApiResponse<List<DiningTableResponse>> response = ApiResponse.<List<DiningTableResponse>>builder()
                 .status(HttpStatus.OK.value())
                 .message("Get all table successful")
                 .data(result)
