@@ -2,15 +2,10 @@ package com.example.qr_order.service;
 
 import com.example.qr_order.dtos.DiningTableRequest;
 import com.example.qr_order.dtos.response.DiningTableResponse;
-import com.example.qr_order.dtos.response.PageResponse;
 import com.example.qr_order.entity.DiningTable;
 import com.example.qr_order.enums.TableStatus;
 import com.example.qr_order.repository.DiningTableRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,24 +58,19 @@ public class DiningTableService {
     }
 
 
-    public PageResponse<DiningTableResponse> getAll(int page, int size) {
+    public List<DiningTableResponse> getAll(TableStatus status) {
 
+        List<DiningTable> tables;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        if (status != null) {
+            tables = tableRepo.findAllByIsDeletedFalseAndStatusOrderByIdDesc(status);
+        } else {
+            tables = tableRepo.findAllByIsDeletedFalseOrderByIdDesc();
+        }
 
-
-        Page<DiningTable> tablePage = tableRepo.findAllByIsDeletedFalse(pageable);
-
-        List<DiningTableResponse> tableResponses = tablePage.getContent().stream()
+        return tables.stream()
                 .map(this::mapToResponse)
                 .toList();
-
-        return PageResponse.<DiningTableResponse>builder()
-                .page(tablePage.getNumber())
-                .size(tablePage.getSize())
-                .total(tablePage.getTotalElements())
-                .items(tableResponses)
-                .build();
     }
 
     public DiningTableResponse getById(Long id) {

@@ -121,6 +121,7 @@ public class AuthService {
             return new AuthResponse(
                     userDetails.getId(),
                     userDetails.getUsername(),
+                    user.getFullName(),
                     userDetails.getRole(),
                     accessToken,
                     isFirstLogin);

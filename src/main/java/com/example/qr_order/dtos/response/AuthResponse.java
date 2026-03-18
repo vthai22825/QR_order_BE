@@ -9,6 +9,7 @@ import lombok.Getter;
 public class AuthResponse {
     private Long userId;
     private String username;
+    private String fullName;
     private Role role;
     private String accessToken;
     private boolean isFirstLogin;
