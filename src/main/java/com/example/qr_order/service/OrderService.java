@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
@@ -41,6 +42,7 @@ public class OrderService {
     private final DiningTableRepo tableRepo;
     private final ProductRepo productRepo;
     private final PayOS payOS;
+    private final SimpMessagingTemplate messagingTemplate;
 
 
     @Transactional
@@ -158,6 +160,10 @@ public class OrderService {
         table.setStatus(TableStatus.AVAILABLE);
         tableRepo.save(table);
 
+        // Gửi thông báo WebSocket để Customer và Cashier cập nhật giao diện
+        String payload = "{\"tableId\": " + table.getId() + ", \"status\": \"PAID\"}";
+        messagingTemplate.convertAndSend("/topic/orders", payload);
+
         return mapToOrderResponse(currentOrder);
     }
 
@@ -224,6 +230,12 @@ public class OrderService {
 
         // 5. Lưu cập nhật xuống Database
         orderRepo.save(order);
+
+        // 6. Gửi WebSocket báo thanh toán thành công
+        if (order.getTable() != null) {
+            String payload = "{\"tableId\": " + order.getTable().getId() + ", \"status\": \"PAID\"}";
+            messagingTemplate.convertAndSend("/topic/orders", payload);
+        }
 
         System.out.println("✅ ĐÃ GẠCH NỢ VÀ DỌN BÀN THÀNH CÔNG CHO ĐƠN: " + orderId);
     }
