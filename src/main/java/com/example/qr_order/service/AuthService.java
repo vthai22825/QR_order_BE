@@ -8,6 +8,9 @@ import com.example.qr_order.entity.User;
 import com.example.qr_order.enums.Role;
 import com.example.qr_order.repository.UserRepo;
 import com.example.qr_order.security.JwtTokenProvider;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -36,6 +39,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final BlackListTokenService blackListTokenService;
 
     private static final String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
 
@@ -87,11 +91,36 @@ public class AuthService {
         List<User> employees = userRepo.findByRoleNotOrderByCreatedAtDesc(Role.OWNER);
         return employees.stream()
                 .map(user -> new EmployeeResponse(
+                        user.getUserId(),
                         user.getFullName(),
                         user.getUserName(),
                         user.getRole(),
-                        user.getPasswordHash()))
+                        user.isActive()))
                 .toList();
+    }
+
+    public MessageResponse toggleActive(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.getRole() == Role.OWNER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot change Owner account status");
+        }
+
+        user.setActive(!user.isActive());
+        userRepo.save(user);
+
+        String status = user.isActive() ? "activated" : "deactivated";
+        return new MessageResponse("Account " + status + " successfully");
+    }
+
+    public MessageResponse logout(String token) {
+        Date expiresAt = jwtTokenProvider.extractExpiration(token);
+        LocalDateTime expiresAtLocal = expiresAt.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        blackListTokenService.blackList(token, expiresAtLocal);
+        return new MessageResponse("Logged out successfully");
     }
 
     // Phần đăng nhập

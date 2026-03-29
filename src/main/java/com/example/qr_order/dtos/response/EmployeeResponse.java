@@ -11,8 +11,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EmployeeResponse {
+    private Long userId;
     private String fullName;
     private String userName;
     private Role role;
-    private String password; // Will contain the hash
+    private boolean isActive;
 }

@@ -37,4 +37,10 @@ public class AdminController {
         MessageResponse response = authService.resetPassword(id);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/users/{id}/toggle-active")
+    public ResponseEntity<MessageResponse> toggleActive(@PathVariable Long id) {
+        MessageResponse response = authService.toggleActive(id);
+        return ResponseEntity.ok(response);
+    }
 }
