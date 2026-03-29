@@ -88,6 +88,20 @@ public class ProductController {
                 return ResponseEntity.ok(response);
         }
 
+        @GetMapping("/promotion/{promotionId}")
+        public ResponseEntity<ApiResponse<List<ProductResponse>>> getByPromotionId(@PathVariable Long promotionId) {
+
+                List<ProductResponse> products = productService.getByPromotionId(promotionId);
+
+                ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message("Lấy danh sách món ăn theo khuyến mãi thành công")
+                        .data(products)
+                        .build();
+
+                return ResponseEntity.ok(response);
+        }
+
         @DeleteMapping("/{id}")
         public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
                 productService.delete(id);

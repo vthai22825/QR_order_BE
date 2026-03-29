@@ -261,8 +261,16 @@ public class OrderService {
                 order.getTable().getName(),
                 order.getStatus(),
                 order.getTotalPrice(),
-                detailResponses
+                detailResponses,
+                order.getCreatedAt()
         );
+    }
+
+    public List<OrderResponse> getOrdersByStatus(OrderStatus status) {
+        return orderRepo.findByStatusOrderByCreatedAtDesc(status)
+                .stream()
+                .map(this::mapToOrderResponse)
+                .toList();
     }
 
     public OrderResponse getActiveOrderByTable(Long tableId) {

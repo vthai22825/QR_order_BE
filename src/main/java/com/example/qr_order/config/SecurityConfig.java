@@ -72,7 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/orders/table/*").permitAll()
 
                         .requestMatchers("/api/webhooks/**").permitAll()
-                        
+
                         // Cho phép kết nối WebSocket tự do
                         .requestMatchers("/ws/**").permitAll()
 
@@ -81,8 +81,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("OWNER")
                         .requestMatchers("/api/cashier/**").hasAnyRole("OWNER", "CASHIER")
                         .requestMatchers("/api/server/**").hasAnyRole("OWNER", "CASHIER", "SERVER")
-                        .requestMatchers("/api/revenue/daily").hasAnyRole("OWNER", "CASHIER")
-                        .requestMatchers("/api/revenue/**").hasRole("OWNER")
+                        .requestMatchers("/api/revenue/**").hasAnyRole("OWNER", "CASHIER")
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

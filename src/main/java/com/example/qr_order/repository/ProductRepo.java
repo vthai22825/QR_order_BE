@@ -26,6 +26,12 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
             "where p.isDeleted = false and c.isDeleted = false and c.id = :categoryId")
     List<Product> findByCategoryId(@Param("categoryId") Long categoryId, Sort sort);
 
+    @Query("select p from Product p " +
+            "join fetch p.category c " +
+            "join fetch p.promotion pr " +
+            "where p.isDeleted = false and pr.id = :promotionId")
+    List<Product> findByPromotionIdAndIsDeletedFalse(@Param("promotionId") Long promotionId, Sort sort);
+
     boolean existsByNameAndIsDeletedFalse(String name);
 
     @Query("SELECT p FROM Product p JOIN FETCH p.category c LEFT JOIN FETCH p.promotion pr WHERE p.id = :id AND p.isDeleted = false AND c.isDeleted = false")

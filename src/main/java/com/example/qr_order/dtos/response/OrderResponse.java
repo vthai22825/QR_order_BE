@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Getter
@@ -18,4 +19,5 @@ public class OrderResponse {
     private OrderStatus status;
     private BigDecimal totalPrice;
     private List<OrderDetailResponse> items;
+    private Instant createdAt;
 }

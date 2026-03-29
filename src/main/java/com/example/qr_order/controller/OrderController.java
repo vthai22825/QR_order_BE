@@ -3,6 +3,7 @@ package com.example.qr_order.controller;
 import com.example.qr_order.dtos.OrderRequest;
 import com.example.qr_order.dtos.response.ApiResponse;
 import com.example.qr_order.dtos.response.OrderResponse;
+import com.example.qr_order.enums.OrderStatus;
 import com.example.qr_order.enums.PaymentMethod;
 import com.example.qr_order.service.OrderService;
 import jakarta.validation.Valid;
@@ -10,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -48,6 +49,22 @@ public class OrderController {
                 .status(HttpStatus.OK.value())
                 .message("Lấy thông tin đơn hàng hiện tại thành công")
                 .data(response)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrdersByStatus(
+            @RequestParam(defaultValue = "PAID") String status
+    ) {
+        OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+        List<OrderResponse> orders = orderService.getOrdersByStatus(orderStatus);
+
+        ApiResponse<List<OrderResponse>> apiResponse = ApiResponse.<List<OrderResponse>>builder()
+                .status(HttpStatus.OK.value())
+                .message("Lấy danh sách đơn hàng theo trạng thái thành công")
+                .data(orders)
                 .build();
 
         return ResponseEntity.ok(apiResponse);

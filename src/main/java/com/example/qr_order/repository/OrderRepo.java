@@ -10,10 +10,14 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface OrderRepo extends JpaRepository<Order, Long> {
+
+    @Query("select o from Order o join fetch o.table t where o.status = :status order by o.createdAt desc")
+    List<Order> findByStatusOrderByCreatedAtDesc(@Param("status") OrderStatus status);
 
 
     @Query("select o from Order o join fetch o.table t where t.id = :tableId and o.status = :status")

@@ -157,6 +157,24 @@ public class ProductService {
                 .map(this::mapToProductResponse)
                 .collect(Collectors.toList()); // Dùng .toList() nếu em xài Java 16+
     }
+
+    public List<ProductResponse> getByPromotionId(Long promotionId) {
+        // Kiểm tra Promotion có tồn tại không
+        Promotion promotion = promotionRepo.findByIdAndIsDeletedFalse(promotionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy chương trình khuyến mãi"));
+
+        Sort sort = Sort.by(
+                Sort.Order.desc("isBestSeller"),
+                Sort.Order.desc("id")
+        );
+
+        List<Product> products = productRepo.findByPromotionIdAndIsDeletedFalse(promotionId, sort);
+
+        return products.stream()
+                .map(this::mapToProductResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void delete(Long id) {
         Product product = productRepo.findById(id)
